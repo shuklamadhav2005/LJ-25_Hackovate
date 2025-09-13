@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart BusIQ Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body class="min-h-screen flex flex-col bg-gradient-to-br from-indigo-100 via-white to-sky-100 font-sans">
+
+<!-- Navbar -->
+<header class="bg-indigo-600 text-white px-6 py-4 flex justify-between items-center shadow-md">
+  <h1 class="text-xl font-bold">Smart BusIQ Dashboard</h1>
+  <button id="logoutBtn" class="bg-white text-indigo-600 px-4 py-2 rounded-lg hover:bg-slate-100 transition">Log Out</button>
+</header>
+
+<main class="flex-1 p-6 space-y-6">
+
+  <!-- Profile Section -->
+  <section class="bg-white rounded-xl shadow p-6 flex flex-col md:flex-row justify-between items-center hover:shadow-lg transition">
+    <div>
+      <h2 class="text-2xl font-semibold text-slate-800">Welcome, <span id="userName"></span> 👋</h2>
+      <p class="mt-1 text-slate-600">Manage your profile and book buses easily.</p>
+    </div>
+    <button id="editProfileBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 mt-4 md:mt-0 transition">Edit Profile</button>
+  </section>
+
+  <!-- Bus Search Section -->
+  <section class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
+    <h3 class="text-lg font-bold text-indigo-600 mb-4">Search Available Buses</h3>
+    <div class="flex flex-col md:flex-row gap-4">
+      <input type="text" id="source" placeholder="Enter Source" class="flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 transition">
+      <input type="text" id="destination" placeholder="Enter Destination" class="flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 transition">
+      <button id="searchBtn" class="bg-gradient-to-r from-indigo-600 to-indigo-400 text-white px-4 py-2 rounded-lg hover:scale-105 transition transform">Search</button>
+    </div>
+    <div id="results" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </section>
+
+  <!-- Favorite Routes Section -->
+  <section class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
+    <h3 class="text-lg font-bold text-indigo-600 mb-4">Favorite Routes</h3>
+    <div class="flex flex-wrap gap-2" id="favoriteRoutes"></div>
+  </section>
+
+  <!-- My Bookings Section -->
+  <section class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
+    <h3 class="text-lg font-bold text-indigo-600 mb-4">My Bookings</h3>
+    <div id="bookings" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </section>
+
+  <!-- Live Bus Tracking Map -->
+  <section class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
+    <h3 class="text-lg font-bold text-indigo-600 mb-4">Live Bus Tracking</h3>
+    <div id="map" style="height: 400px;" class="rounded-lg shadow"></div>
+  </section>
+
+  <!-- Dashboard Stats -->
+  <!-- <section class="grid grid-cols-1 md:grid-cols-3 gap-6"> -->
+    <!-- <div class="p-6 bg-gradient-to-tr from-indigo-400 to-indigo-600 text-white rounded-xl shadow-lg transform hover:scale-105 transition"> -->
+      <!-- <h3 class="text-lg font-bold">📍 Live Bus Tracking</h3>
+      <p class="mt-2 text-indigo-100">Track buses in real time on the map.</p> -->
+    <!-- </div> -->
+    <!-- <div class="p-6 bg-gradient-to-tr from-pink-400 to-pink-600 text-white rounded-xl shadow-lg transform hover:scale-105 transition">
+      <h3 class="text-lg font-bold">🎟 Ticket Management</h3>
+      <p class="mt-2 text-pink-100">View or book tickets quickly.</p>
+    </div> -->
+   <!-- Usage Stats Section -->
+<section class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
+  <h3 class="text-lg font-bold text-green-600 mb-4">📊 Usage Stats</h3>
+  <button id="showStatsBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition mb-4">
+    Show My Travel Stats
+  </button>
+  <canvas id="usageChart" style="max-height: 400px;"></canvas>
+</section>
+
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-slate-100 text-center text-slate-600 py-4 text-sm mt-auto shadow-inner">
+  © <span id="year"></span> SmartApp — All rights reserved.
+  <div class="flex justify-center gap-4 mt-2">
+    <a href="#" class="hover:text-indigo-600 transition">Facebook</a>
+    <a href="#" class="hover:text-indigo-600 transition">Twitter</a>
+    <a href="#" class="hover:text-indigo-600 transition">LinkedIn</a>
+  </div>
+</footer>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white p-6 rounded-xl shadow-lg text-center max-w-sm w-full">
+    <h3 class="text-lg font-bold text-indigo-600">Complete Your Payment</h3>
+    <p class="mt-2 text-slate-600">Scan the QR code below or use UPI ID:</p>
+    <img src="QR.jpg" alt="QR Code" class="mx-auto mt-4 w-40 h-40 rounded-lg border shadow">
+    <p class="mt-2 font-mono text-indigo-700">shuklamadhav2005@oksbi</p>
+    <button id="closePayment" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">Close</button>
+  </div>
+</div>
+
+<script>
+document.getElementById("year").textContent = new Date().getFullYear();
+
+// User data
+const loggedInUser = localStorage.getItem("loggedInUser") || localStorage.key(0);
+let userData = null;
+if(loggedInUser){
+  try{
+    userData = JSON.parse(localStorage.getItem(loggedInUser));
+    if(userData) document.getElementById("userName").textContent = userData.fullName || userData.username;
+  } catch(err){ console.error("Error parsing user data:", err); }
+}
+
+// Logout
+document.getElementById("logoutBtn").addEventListener("click",()=>{window.location.href="index.html";});
+
+// Edit profile
+document.getElementById("editProfileBtn").addEventListener("click",()=>{
+  if(!userData){ alert("User data not found. Please log in again."); return; }
+  const currentName = userData.fullName || userData.username;
+  const newName = prompt("Enter new name:", currentName);
+  if(newName && newName.trim()){
+    userData.fullName = newName.trim();
+    localStorage.setItem(loggedInUser, JSON.stringify(userData));
+    document.getElementById("userName").textContent = newName.trim();
+    alert("Profile updated!");
+  }
+});
+
+// Bus data with routes
+ // Bus data
+   const buses = [
+  { name: "Bus A1", source: "Ahmedabad", destination: "Surat", time: "06:00 AM", price: 280,
+    capacity: 40, bookedSeats: 12,
+    route: [[23.0225, 72.5714], [22.7, 72.7], [22.5, 72.75], [21.1702, 72.8311]] },
+  { name: "Bus A2", source: "Ahmedabad", destination: "Surat", time: "09:00 AM", price: 280,
+    capacity: 40, bookedSeats: 8,
+    route: [[23.0225, 72.5714], [22.8, 72.72], [22.6, 72.76], [21.1702, 72.8311]] },
+  { name: "Bus A3", source: "Ahmedabad", destination: "Surat", time: "12:00 PM", price: 280,
+    capacity: 40, bookedSeats: 20,
+    route: [[23.0225, 72.5714], [22.9, 72.73], [22.7, 72.78], [21.1702, 72.8311]] },
+  { name: "Bus A4", source: "Ahmedabad", destination: "Surat", time: "03:00 PM", price: 280,
+    capacity: 40, bookedSeats: 5,
+    route: [[23.0225, 72.5714], [22.85, 72.725], [22.55, 72.785], [21.1702, 72.8311]] },
+
+  { name: "Bus B1", source: "Ahmedabad", destination: "Baroda", time: "06:30 AM", price: 180,
+    capacity: 30, bookedSeats: 10,
+    route: [[23.0225, 72.5714], [22.8, 72.65], [22.3072, 73.1812]] },
+  { name: "Bus B2", source: "Ahmedabad", destination: "Baroda", time: "10:00 AM", price: 180,
+    capacity: 30, bookedSeats: 15,
+    route: [[23.0225, 72.5714], [22.85, 72.67], [22.3072, 73.1812]] },
+  { name: "Bus B3", source: "Ahmedabad", destination: "Baroda", time: "01:00 PM", price: 180,
+    capacity: 30, bookedSeats: 7,
+    route: [[23.0225, 72.5714], [22.9, 72.68], [22.3072, 73.1812]] },
+  { name: "Bus B4", source: "Ahmedabad", destination: "Baroda", time: "05:00 PM", price: 180,
+    capacity: 30, bookedSeats: 20,
+    route: [[23.0225, 72.5714], [22.95, 72.69], [22.3072, 73.1812]] },
+
+  { name: "Bus S1", source: "Surat", destination: "Baroda", time: "07:00 AM", price: 120,
+    capacity: 25, bookedSeats: 5,
+    route: [[21.1702, 72.8311], [21.7, 72.95], [22.3072, 73.1812]] },
+  { name: "Bus S2", source: "Surat", destination: "Baroda", time: "10:30 AM", price: 120,
+    capacity: 25, bookedSeats: 12,
+    route: [[21.1702, 72.8311], [21.8, 72.96], [22.3072, 73.1812]] },
+  { name: "Bus S3", source: "Surat", destination: "Baroda", time: "01:30 PM", price: 120,
+    capacity: 25, bookedSeats: 8,
+    route: [[21.1702, 72.8311], [21.9, 72.97], [22.3072, 73.1812]] },
+  { name: "Bus S4", source: "Surat", destination: "Baroda", time: "06:00 PM", price: 120,
+    capacity: 25, bookedSeats: 15,
+    route: [[21.1702, 72.8311], [22.0, 72.98], [22.3072, 73.1812]] },
+
+  { name: "Bus R1", source: "Baroda", destination: "Rajkot", time: "06:15 AM", price: 150,
+    capacity: 35, bookedSeats: 18,
+    route: [[22.3072, 73.1812], [22.8, 73.2], [23.0, 70.8]] },
+  { name: "Bus R2", source: "Baroda", destination: "Rajkot", time: "09:15 AM", price: 150,
+    capacity: 35, bookedSeats: 12,
+    route: [[22.3072, 73.1812], [22.9, 73.25], [23.1, 70.85]] },
+  { name: "Bus R3", source: "Baroda", destination: "Rajkot", time: "12:15 PM", price: 150,
+    capacity: 35, bookedSeats: 20,
+    route: [[22.3072, 73.1812], [23.0, 73.3], [23.2, 70.9]] },
+  { name: "Bus R4", source: "Baroda", destination: "Rajkot", time: "03:15 PM", price: 150,
+    capacity: 35, bookedSeats: 10,
+    route: [[22.3072, 73.1812], [23.05, 73.35], [23.25, 70.95]] }
+];
+
+
+// Bookings
+function renderBookings(){
+  const bookingsDiv=document.getElementById("bookings");
+  bookingsDiv.innerHTML="";
+  const userBookings=JSON.parse(localStorage.getItem(loggedInUser+"_bookings"))||[];
+  if(userBookings.length===0){ bookingsDiv.innerHTML=`<p class="text-slate-500">No bookings yet.</p>`; return; }
+  userBookings.forEach((bus,index)=>{
+    const card=document.createElement("div");
+    card.className="p-4 bg-white rounded-xl shadow hover:shadow-md transition flex flex-col justify-between";
+    card.innerHTML=`
+      <div>
+        <h4 class="text-indigo-600 font-bold text-lg">🚌 ${bus.name}</h4>
+        <p class="text-slate-500 mt-1">From: ${bus.source} → ${bus.destination}</p>
+        <p class="text-slate-500 mt-1">Departure: ${bus.time}</p>
+        <p class="text-slate-500 mt-1 font-semibold">Fare: ₹${bus.price}</p>
+      </div>
+      <button class="mt-2 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition">Remove Booking</button>
+    `;
+    card.querySelector("button").addEventListener("click",()=>{
+      userBookings.splice(index,1);
+      localStorage.setItem(loggedInUser+"_bookings",JSON.stringify(userBookings));
+      renderBookings();
+    });
+    bookingsDiv.appendChild(card);
+  });
+}
+renderBookings();
+
+// Search buses
+document.getElementById("searchBtn").addEventListener("click",()=>{
+  const source=document.getElementById("source").value.trim();
+  const destination=document.getElementById("destination").value.trim();
+  const resultsDiv=document.getElementById("results");
+  resultsDiv.innerHTML="";
+  if(!source||!destination){ alert("Enter both source & destination"); return; }
+  const filtered=buses.filter(bus=>bus.source.toLowerCase()===source.toLowerCase() && bus.destination.toLowerCase()===destination.toLowerCase());
+  if(filtered.length===0){ resultsDiv.innerHTML=`<p class="text-red-500">No buses for ${source} → ${destination}</p>`; return; }
+ filtered.forEach(bus => {
+  const availableSeats = bus.capacity - bus.bookedSeats;
+  const card = document.createElement("div");
+  card.className = "p-4 bg-white rounded-xl shadow hover:shadow-lg transition flex flex-col justify-between";
+  card.innerHTML = `
+    <h4 class="text-indigo-600 font-bold text-lg">🚌 ${bus.name}</h4>
+    <p class="text-slate-500 mt-1">From: ${bus.source} → ${bus.destination}</p>
+    <p class="text-slate-500 mt-1">Departure: ${bus.time}</p>
+    <p class="text-slate-500 mt-1 font-semibold">Fare: ₹${bus.price}</p>
+    <p class="text-slate-500 mt-1 font-semibold">Seats Available: ${availableSeats}</p>
+    <button class="mt-2 bg-gradient-to-r from-indigo-600 to-indigo-400 text-white px-3 py-1 rounded hover:scale-105 transition transform">Book Now</button>
+  `;
+  
+  card.querySelector("button").addEventListener("click", () => {
+    if(availableSeats <= 0){ alert("No seats available for this bus!"); return; }
+    
+    let userBookings = JSON.parse(localStorage.getItem(loggedInUser+"_bookings")) || [];
+    userBookings.push(bus);
+    localStorage.setItem(loggedInUser+"_bookings", JSON.stringify(userBookings));
+    
+    // Update booked seats
+    bus.bookedSeats += 1;
+    
+    renderBookings();
+    simulateBusRoute(bus); // live tracking
+    document.getElementById("paymentModal").classList.remove("hidden");
+  });
+
+  resultsDiv.appendChild(card);
+});
+
+});
+
+// Payment modal
+document.getElementById("closePayment").addEventListener("click",()=>{document.getElementById("paymentModal").classList.add("hidden");});
+
+// Favorites
+function renderFavorites(){
+  const favDiv=document.getElementById("favoriteRoutes");
+  favDiv.innerHTML="";
+  const favorites=JSON.parse(localStorage.getItem(loggedInUser+"_favorites"))||[];
+  if(favorites.length===0){ favDiv.innerHTML=`<p class="text-slate-500">No favorite routes yet.</p>`; return; }
+  favorites.forEach(route=>{
+    const btn=document.createElement("button");
+    btn.className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition";
+    btn.textContent=`${route.source} → ${route.destination}`;
+    btn.addEventListener("click",()=>{
+      document.getElementById("source").value=route.source;
+      document.getElementById("destination").value=route.destination;
+      document.getElementById("searchBtn").click();
+    });
+    favDiv.appendChild(btn);
+  });
+}
+renderFavorites();
+
+const addFavBtn=document.createElement("button");
+addFavBtn.className="bg-green-600 text-white px-3 py-1 rounded ml-2 hover:bg-green-700 transition";
+addFavBtn.textContent="Add to Favorites";
+addFavBtn.addEventListener("click",()=>{
+  const source=document.getElementById("source").value.trim();
+  const destination=document.getElementById("destination").value.trim();
+  if(!source||!destination){ alert("Enter source & destination"); return; }
+  let favorites=JSON.parse(localStorage.getItem(loggedInUser+"_favorites"))||[];
+  if(!favorites.some(f=>f.source===source && f.destination===destination)){
+    favorites.push({source,destination});
+    localStorage.setItem(loggedInUser+"_favorites",JSON.stringify(favorites));
+    renderFavorites();
+    alert("Route added to favorites!");
+  } else alert("Route already in favorites.");
+});
+document.querySelector("#searchBtn").parentNode.appendChild(addFavBtn);
+
+// Leaflet Map for Live Tracking
+const map=L.map('map').setView([23.0225,72.5714],6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+
+let busMarker=null, busPolyline=null, busInterval=null;
+function simulateBusRoute(bus){
+  if(busInterval) clearInterval(busInterval);
+  if(busMarker) map.removeLayer(busMarker);
+  if(busPolyline) map.removeLayer(busPolyline);
+  const route=bus.route;
+  busMarker=L.marker(route[0]).addTo(map).bindPopup(`<b>${bus.name}</b>`).openPopup();
+  busPolyline=L.polyline(route,{color:'blue'}).addTo(map);
+  map.fitBounds(busPolyline.getBounds());
+  let step=0, segmentStep=0, stepsPerSegment=50;
+  busInterval=setInterval(()=>{
+    if(step>=route.length-1){ clearInterval(busInterval); return; }
+    const [lat1,lng1]=route[step], [lat2,lng2]=route[step+1];
+    const lat=lat1+(lat2-lat1)*(segmentStep/stepsPerSegment);
+    const lng=lng1+(lng2-lng1)*(segmentStep/stepsPerSegment);
+    busMarker.setLatLng([lat,lng]);
+    segmentStep++;
+    if(segmentStep>stepsPerSegment){ segmentStep=0; step++; }
+  },200);
+}
+// Function to show toast
+function showToast(message) {
+  const container = document.getElementById("toastContainer");
+  const toast = document.createElement("div");
+  toast.className = "bg-indigo-600 text-white px-4 py-2 rounded shadow-lg transform transition-all duration-300 ease-in-out opacity-0 translate-y-4";
+  toast.textContent = message;
+  container.appendChild(toast);
+  
+  // Animate in
+  requestAnimationFrame(() => {
+    toast.classList.remove("opacity-0", "translate-y-4");
+  });
+
+  // Remove after 5 seconds
+  setTimeout(() => {
+    toast.classList.add("opacity-0", "translate-y-4");
+    toast.addEventListener("transitionend", () => toast.remove());
+  }, 5000);
+}
+// Favorites
+function renderFavorites(){
+  const favDiv=document.getElementById("favoriteRoutes");
+  favDiv.innerHTML="";
+  const favorites=JSON.parse(localStorage.getItem(loggedInUser+"_favorites"))||[];
+  if(favorites.length===0){ 
+    favDiv.innerHTML=`<p class="text-slate-500">No favorite routes yet.</p>`; 
+    return; 
+  }
+  favorites.forEach((route,index)=>{
+    const routeContainer = document.createElement("div");
+    routeContainer.className = "flex items-center gap-2";
+
+    const btn = document.createElement("button");
+    btn.className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition";
+    btn.textContent=`${route.source} → ${route.destination}`;
+    btn.addEventListener("click",()=>{
+      document.getElementById("source").value=route.source;
+      document.getElementById("destination").value=route.destination;
+      document.getElementById("searchBtn").click();
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition";
+    deleteBtn.textContent="❌";
+    deleteBtn.addEventListener("click",()=>{
+      favorites.splice(index,1);
+      localStorage.setItem(loggedInUser+"_favorites", JSON.stringify(favorites));
+      renderFavorites(); // re-render the list
+    });
+
+    routeContainer.appendChild(btn);
+    routeContainer.appendChild(deleteBtn);
+    favDiv.appendChild(routeContainer);
+  });
+}
+renderFavorites();
+
+// Notifications & Alerts for upcoming buses
+function checkBusNotifications() {
+  const userBookings = JSON.parse(localStorage.getItem(loggedInUser+"_bookings")) || [];
+  const now = new Date();
+  
+  userBookings.forEach(bus => {
+    const [time, meridiem] = bus.time.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if(meridiem.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+    if(meridiem.toUpperCase() === 'AM' && hours === 12) hours = 0;
+
+    const departure = new Date();
+    departure.setHours(hours, minutes, 0, 0);
+
+    const diffMinutes = (departure - now) / 60000;
+
+    if(diffMinutes > 0 && diffMinutes <= 5) {
+      const notifiedBuses = JSON.parse(localStorage.getItem(loggedInUser+"_notified")) || [];
+      if(!notifiedBuses.includes(bus.name)) {
+        showToast(`🚌 Your bus ${bus.name} from ${bus.source} → ${bus.destination} departs in ${Math.ceil(diffMinutes)} minutes!`);
+        notifiedBuses.push(bus.name);
+        localStorage.setItem(loggedInUser+"_notified", JSON.stringify(notifiedBuses));
+      }
+    }
+  });
+}
+
+// Check notifications every 1 minute
+setInterval(checkBusNotifications, 60000);
+// Initial check
+checkBusNotifications();
+let usageChart = null;
+
+document.getElementById("showStatsBtn").addEventListener("click", () => {
+  const userBookings = JSON.parse(localStorage.getItem(loggedInUser + "_bookings")) || [];
+
+  // Prepare data for chart
+  const destinations = {};
+  userBookings.forEach(bus => {
+    const key = `${bus.source} → ${bus.destination}`;
+    destinations[key] = (destinations[key] || 0) + 1;
+  });
+
+  const labels = Object.keys(destinations);
+  const data = Object.values(destinations);
+
+  // Remove previous chart if exists
+  if(usageChart) usageChart.destroy();
+
+  const ctx = document.getElementById('usageChart').getContext('2d');
+  usageChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Number of Bookings',
+        data: data,
+        backgroundColor: 'rgba(34,197,94,0.7)',
+        borderColor: 'rgba(34,197,94,1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: 'My Travel Usage Stats' }
+      },
+      scales: {
+        y: { beginAtZero: true, precision:0 }
+      }
+    }
+  });
+});
+
+</script>
+</body>
+</html>

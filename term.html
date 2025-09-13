@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms & Conditions</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+
+  <header class="bg-indigo-600 text-white p-4 text-center text-lg font-semibold">
+    Terms & Conditions
+  </header>
+
+  <main class="flex-1 p-6 max-w-3xl mx-auto bg-white shadow-md rounded-lg mt-6">
+    <h1 class="text-2xl font-bold text-indigo-600 mb-4">Our Terms</h1>
+    <p class="text-slate-600 mb-4">
+      Welcome to Smart BusIQ. By accessing and using our services, you agree to the following terms:
+    </p>
+    <ul class="list-disc pl-6 space-y-2 text-slate-700">
+      <li>You must provide accurate information during registration.</li>
+      <li>You are responsible for keeping your account secure.</li>
+      <li>We may update or change these terms anytime.</li>
+      <li>Use of our service is at your own risk.</li>
+    </ul>
+
+    <div class="mt-6 text-right">
+      <a href="index.html" class="text-indigo-600 underline">Back to Welcome</a>
+    </div>
+  </main>
+
+  <footer class="bg-slate-100 text-center py-3 text-sm text-slate-600">
+    © <span id="year"></span> SmartApp — All rights reserved.
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
